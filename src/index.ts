@@ -2,6 +2,7 @@ import { Application } from 'probot' // eslint-disable-line no-unused-vars
 import { findColumn, findProject, getConfig } from './lib'
 
 export = (app: Application) => {
+
   app.on('issues.opened', async (context) => {
     const config = await getConfig(context)
 
@@ -19,7 +20,11 @@ export = (app: Application) => {
   })
 
   app.on('pull_request.opened', async (context) => {
+
     const config = await getConfig(context)
+
+    const isPullRequestDraft: boolean = context.payload.pull_request.draft
+    const columnPullRequest: string = isPullRequestDraft ? config.pullRequests.columnDraft : config.pullRequests.column
 
     const pullRequestTitle = context.payload.pull_request.title
     const pullRequestId = context.payload.pull_request.id
@@ -28,7 +33,7 @@ export = (app: Application) => {
 
     const project = await findProject(context, config.project)
 
-    const column = await findColumn(context, project, config.pullRequests.column)
+    const column = await findColumn(context, project, columnPullRequest)
 
     await context.github.projects.createCard({
       column_id: column.id,
@@ -37,4 +42,5 @@ export = (app: Application) => {
     })
     context.log.debug(`Added PR #${context.payload.pull_request.number} to column ${column.name} of project ${project.name}`)
   })
+
 }
